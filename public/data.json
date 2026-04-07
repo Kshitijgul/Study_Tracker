@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "exportedAt": "2026-01-01T00:00:00.000Z",
+  "selectedDate": "2026-01-01",
+  "subjects": [
+    {
+      "id": "s1",
+      "name": "Linear Algebra",
+      "color": "#6366f1"
+    },
+    {
+      "id": "s2",
+      "name": "Digital Logic",
+      "color": "#ec4899"
+    }
+  ],
+  "dayDataMap": {
+    "2026-01-01": {
+      "date": "2026-01-01",
+      "tasks": [
+        {
+          "id": "task-1",
+          "subject": "Linear Algebra",
+          "topic": "Lecture 7 - Matrices",
+          "done": true
+        },
+        {
+          "id": "task-2",
+          "subject": "Digital Logic",
+          "topic": "Practice - K Map",
+          "done": false
+        }
+      ]
+    }
+  }
+}
