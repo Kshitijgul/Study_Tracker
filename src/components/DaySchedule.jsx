@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DAY_NAMES, MONTH_NAMES } from '../utils/calender';
 import FocusTimer from './FocusTimer';
 
@@ -9,6 +9,13 @@ export default function DaySchedule({ date, tasks, subjects, addTask, toggleTask
   const [editTopic, setEditTopic] = useState('');
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [focusTimerTask, setFocusTimerTask] = useState(null);
+
+  // ← KEY FIX: sync selectedSubject when subjects load after mount
+  useEffect(() => {
+    if (subjects.length > 0 && !selectedSubject) {
+      setSelectedSubject(subjects[0].name);
+    }
+  }, [subjects]);
 
   const d = new Date(date + 'T00:00:00');
   const dayName = DAY_NAMES[d.getDay()];
@@ -25,10 +32,11 @@ export default function DaySchedule({ date, tasks, subjects, addTask, toggleTask
   const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   const handleAdd = () => {
-    if (selectedSubject && topic.trim()) {
-      addTask(date, selectedSubject, topic.trim());
-      setTopic('');
-    }
+    if (!topic.trim()) return;
+    const subjectToUse = selectedSubject || subjects[0]?.name;
+    if (!subjectToUse) return;
+    addTask(date, subjectToUse, topic.trim());
+    setTopic('');
   };
 
   const getSubjectColor = (name) => {
@@ -47,7 +55,6 @@ export default function DaySchedule({ date, tasks, subjects, addTask, toggleTask
     setEditingTask(null);
   };
 
-  // Copy from yesterday
   const copyFromYesterday = () => {
     const yesterday = new Date(date + 'T00:00:00');
     yesterday.setDate(yesterday.getDate() - 1);
@@ -58,7 +65,6 @@ export default function DaySchedule({ date, tasks, subjects, addTask, toggleTask
     });
   };
 
-  // Quick templates
   const quickTemplates = [
     { subject: 'Linear Algebra', topic: 'Lecture - Eigenvalues & Eigenvectors' },
     { subject: 'Digital Logic', topic: 'Practice - K-Map Problems' },
@@ -97,9 +103,7 @@ export default function DaySchedule({ date, tasks, subjects, addTask, toggleTask
                   <svg viewBox="0 0 36 36" className="transform -rotate-90">
                     <path
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      fill="none"
-                      stroke="#1f2937"
-                      strokeWidth="3"
+                      fill="none" stroke="#1f2937" strokeWidth="3"
                     />
                     <path
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
@@ -116,7 +120,6 @@ export default function DaySchedule({ date, tasks, subjects, addTask, toggleTask
           </div>
         </div>
 
-        {/* Progress bar */}
         {totalCount > 0 && (
           <div className="mt-3">
             <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -146,6 +149,9 @@ export default function DaySchedule({ date, tasks, subjects, addTask, toggleTask
               onChange={e => setSelectedSubject(e.target.value)}
               className="bg-gray-800 text-white text-sm px-3 py-2.5 rounded-lg border border-gray-700 focus:border-indigo-500 outline-none w-full sm:min-w-[160px]"
             >
+              {subjects.length === 0 && (
+                <option value="">No subjects yet</option>
+              )}
               {subjects.map(s => (
                 <option key={s.id} value={s.name}>{s.name}</option>
               ))}
@@ -163,7 +169,7 @@ export default function DaySchedule({ date, tasks, subjects, addTask, toggleTask
           </div>
           <button
             onClick={handleAdd}
-            disabled={!selectedSubject || !topic.trim()}
+            disabled={!topic.trim() || subjects.length === 0}
             className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm px-5 py-2.5 rounded-lg font-semibold transition flex-shrink-0"
           >
             + Add Task
@@ -186,26 +192,25 @@ export default function DaySchedule({ date, tasks, subjects, addTask, toggleTask
           </button>
         </div>
 
-        {/* Quick templates dropdown */}
         {showQuickAdd && (
           <div className="mt-2 bg-gray-800 rounded-lg border border-gray-700 p-2 space-y-1">
             {quickTemplates
               .filter(qt => subjects.some(s => s.name === qt.subject))
               .map((qt, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  addTask(date, qt.subject, qt.topic);
-                  setShowQuickAdd(false);
-                }}
-                className="w-full text-left text-xs text-gray-300 hover:bg-gray-700 px-3 py-2 rounded flex items-center gap-2 transition"
-              >
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: getSubjectColor(qt.subject) }} />
-                <span className="font-medium text-gray-400">{qt.subject}</span>
-                <span className="text-gray-500">—</span>
-                <span>{qt.topic}</span>
-              </button>
-            ))}
+                <button
+                  key={i}
+                  onClick={() => {
+                    addTask(date, qt.subject, qt.topic);
+                    setShowQuickAdd(false);
+                  }}
+                  className="w-full text-left text-xs text-gray-300 hover:bg-gray-700 px-3 py-2 rounded flex items-center gap-2 transition"
+                >
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: getSubjectColor(qt.subject) }} />
+                  <span className="font-medium text-gray-400">{qt.subject}</span>
+                  <span className="text-gray-500">—</span>
+                  <span>{qt.topic}</span>
+                </button>
+              ))}
             {quickTemplates.filter(qt => subjects.some(s => s.name === qt.subject)).length === 0 && (
               <p className="text-xs text-gray-500 px-3 py-2">Add subjects from the sidebar first</p>
             )}
@@ -220,7 +225,14 @@ export default function DaySchedule({ date, tasks, subjects, addTask, toggleTask
             <div className="text-5xl mb-4">📝</div>
             <p className="text-gray-400 text-base font-medium">No tasks scheduled</p>
             <p className="text-gray-600 text-sm mt-1">Add your study plan for this day above</p>
-            <p className="text-gray-700 text-xs mt-3">💡 Tip: Add subjects like "Linear Algebra - Lecture 7"</p>
+            {subjects.length === 0 && (
+              <p className="text-indigo-400 text-xs mt-3 bg-indigo-400/10 px-4 py-2 rounded-lg inline-block">
+                👈 First add a subject from the sidebar
+              </p>
+            )}
+            {subjects.length > 0 && (
+              <p className="text-gray-700 text-xs mt-3">💡 Tip: Type a topic above and press Enter</p>
+            )}
           </div>
         ) : (
           tasks.map((task, index) => (
@@ -298,7 +310,7 @@ export default function DaySchedule({ date, tasks, subjects, addTask, toggleTask
               {/* Actions */}
               <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity flex-shrink-0">
                 <button
-                 onClick={() => setFocusTimerTask(task)} // task already has subject_id from DB
+                  onClick={() => setFocusTimerTask(task)}
                   className="text-gray-500 hover:text-indigo-400 text-xs p-1.5 rounded hover:bg-gray-800 transition flex items-center gap-1"
                   title="Start Focus Session"
                 >
